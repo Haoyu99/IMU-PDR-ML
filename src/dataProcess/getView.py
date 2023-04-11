@@ -34,6 +34,6 @@ def load_view_point(pcd, filename):
 if __name__ == "__main__":
     pcd =open3d.geometry.TriangleMesh.create_coordinate_frame(
     size=20, origin=[-2, -2, -2])
-    save_view_point(pcd, "D:\DataSet\RIDI\Projetct\source\draw.json")  # 保存好得json文件位置
+    save_view_point(pcd, "D:\DataSet\RIDI\Projetct\s\draw.json")  # 保存好得json文件位置
     load_view_point(pcd, "D:\DataSet\RIDI\Projetct\source\draw.json")  # 加载修改时较后的pcd文件
 

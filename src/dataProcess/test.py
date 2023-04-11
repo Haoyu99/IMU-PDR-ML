@@ -54,40 +54,47 @@ dict_df = {k: from_path_to_df(v)
 ori = []
 for i in range(len(dict_df['orientation'][1])):
     ori.append([dict_df['orientation'][1][i], dict_df['orientation'][2][i], dict_df['orientation'][3][i], dict_df['orientation'][4][i]])
-print(ori)
+# print(ori)
 
 
 vis = open3d.visualization.Visualizer()
-vis.create_window(
-    window_name="Phone",
-    width=1440, height=1080
-)
-ctr = vis.get_view_control()
-param = open3d.io.read_pinhole_camera_parameters("D:\DataSet\RIDI\Projetct\source\draw.json")
+vis.create_window(window_name='phone', width=1440, height=1080)
+
+param = open3d.io.read_pinhole_camera_parameters("./resources/draw.json")
 # Geometry追加
 mesh_frame = open3d.geometry.TriangleMesh.create_coordinate_frame(
     size=15, origin=[-2, -2, -2])
 
-phone = open3d.io.read_point_cloud("iPhonex.pcd")
+phone = open3d.io.read_point_cloud("./resources/iPhonex.pcd")
+# 填色
 phone.paint_uniform_color([1,0.5,0])
 vis.add_geometry(mesh_frame)
 vis.add_geometry(phone)
-ctr.convert_from_pinhole_camera_parameters(param)
 
-   # 更新处理
-while True:
-    for i in range(0, len(ori),200):
-        quart = np.array([ori[i][3],ori[i][0], ori[i][1], ori[i][2]]).T
-        thQuart = phone.get_rotation_matrix_from_quaternion(quart)
-        phone.rotate(thQuart)
-        vis.update_geometry(phone)
-        vis.poll_events()
-        vis.update_renderer()
-        time.sleep(1)
-        vis.capture_screen_image("pic/temp_%04d.jpg" % i)
-        # 位置还原
-        quart = np.array([ori[i][3],-ori[i][0], -ori[i][1], -ori[i][2]]).T
-        thQuart = phone.get_rotation_matrix_from_quaternion(quart)
-        phone.rotate(thQuart)
+quart = np.array([[0.78648,0.617316,-0.018206,-0.006167]]).T
+thQuart = phone.get_rotation_matrix_from_quaternion(quart)
+phone.rotate(thQuart)
+vis.run()  # user changes the view and press "q" to terminate
+
+# vis.update_geometry(phone)
+# vis.poll_events()
+# vis.update_renderer()
+# vis.capture_screen_image("./resources/iPhonex.jpg")
+
+# 更新处理
+# while True:
+#     for i in range(0, len(ori),200):
+#         quart = np.array([ori[i][3],ori[i][0], ori[i][1], ori[i][2]]).T
+#         thQuart = phone.get_rotation_matrix_from_quaternion(quart)
+#         phone.rotate(thQuart)
+#         vis.update_geometry(phone)
+#         vis.poll_events()
+#         vis.update_renderer()
+#         time.sleep(1)
+#         vis.capture_screen_image("pic/temp_%04d.jpg" % i)
+#         # 位置还原
+#         quart = np.array([ori[i][3],-ori[i][0], -ori[i][1], -ori[i][2]]).T
+#         thQuart = phone.get_rotation_matrix_from_quaternion(quart)
+#         phone.rotate(thQuart)
 
 
