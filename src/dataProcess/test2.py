@@ -51,7 +51,7 @@ data_df = all_files_df.pivot_table(values='path',
 #     gyro_World = np.concatenate((timestamp_s, gyro_World), axis=1)
 #     file_utils.save_data_to_txt(gyro_World, path_gyro_glob)
 
-# 写出文件 csv格式
+# 写出文件 csv格式 (由于pose的时间与acce等不相等 使用已经处理的data)
 for i in range(0, len(data_df)):
     cur_exp = data_df.iloc[i]
     output_dir = BASE_DIR + '\\' + cur_exp['person'] + '_' + cur_exp['activity']
