@@ -28,7 +28,7 @@ def save_data_to_txt(data, filename):
             if i == 0:
                 file.write(f'# Create Time :{current_time} Create By haoyu99  \n')
             # 将数据保存到 txt 文件
-            np.savetxt(file, [row], fmt='%.6f')
+            np.savetxt(file, [row],  fmt=['%d', '%.6f', '%.6f', '%.6f'])
 
 
 def from_path_to_df(in_path):
@@ -53,5 +53,7 @@ def from_path_to_df(in_path):
                 old_cols[2] = 'y'
                 old_cols[3] = 'z'
             cur_df.columns = old_cols
-        cur_df['timestamp_s'] = cur_df['timestamp_ns']/1.0e9
+        # cur_df['timestamp_s'] = cur_df['timestamp_ns']/1.0e9
+        # 加载glob的时候不用除
+        cur_df['timestamp_s'] = cur_df['timestamp_ns']
         return cur_df.drop('timestamp_ns', axis=1).sort_values('timestamp_s')
