@@ -1,5 +1,35 @@
-import data_ridi
+from data_ridi import RIDIRawDataSequence,RIDIDataset
 import matplotlib.pyplot as plt
+from data_utils import load_cached_sequences
+from pathlib import Path
+import pandas as pd
 
-data = data_ridi.RIDIRawDataSequence('D:\DataSet\RIDI\\archive\data_publish_v2\dan_bag1\processed',interval=200)
-print(data.get_aux().shape)
+# 测试RIDIRawDataSequence类的加载
+# data = RIDIRawDataSequence('D:\DataSet\RIDI\\archive\data_publish_v2\dan_bag1\processed',interval=200)
+# print(data.get_aux().shape)
+
+
+# 生成train_list 里面放的是每个用于训练的文件夹的名字
+# BASE_DIR = 'D:\DataSet\RIDI\\archive\data_publish_v2'
+# DIR = Path(BASE_DIR)
+# train_list = pd.read_csv(BASE_DIR+'\list_train_publish_v2.txt')
+# train_list = train_list['file_name']
+# print(train_list)
+# train_list.to_csv(BASE_DIR+'\\train_list.txt', sep='\t',index=False, header=False)
+# 生成test_list 里面放的是每个用于训练的文件夹的名字
+# test_list = pd.read_csv(BASE_DIR+'\list_test_publish_v2.txt')
+# test_list = test_list['file_name']
+# print(test_list)
+# test_list.to_csv(BASE_DIR+'\\test_list.txt', sep='\t',index=False, header=False)
+
+
+# 测试load_cached_sequences方法
+root_dir = 'D:\DataSet\RIDI\\archive\data_publish_v2'
+list_path = 'D:\DataSet\RIDI\\archive\data_publish_v2\\train_list.txt'
+with open(list_path) as f:
+    data_list = [s.strip().split(',' or ' ')[0] for s in f.readlines() if len(s) > 0 and s[0] != '#']
+seq_type = RIDIRawDataSequence
+cache = root_dir+'\\cache'
+# load_cached_sequences(seq_type,root_dir,data_list,cache)
+data = RIDIDataset(RIDIRawDataSequence,root_dir,data_list,cache)
+print(len(data))

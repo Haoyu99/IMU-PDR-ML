@@ -1,5 +1,5 @@
 from os import path as osp
-from data_utils import DataSequence
+from data_utils import DataSequence,load_cached_sequences
 import numpy as np
 import pandas
 import random
@@ -40,8 +40,8 @@ class RIDIRawDataSequence(DataSequence):
         self.info['path'] = osp.split(path)[-1]
         print(path)
 
-        if osp.exists(osp.join(path, 'data.csv')):
-            imu_all = pandas.read_csv(osp.join(path, 'data.csv'))
+        if osp.exists(osp.join(path, 'processed/data.csv')):
+            imu_all = pandas.read_csv(osp.join(path, 'processed/data.csv'))
         else:
             print('fail to load, data.csv is not exist')
 
@@ -104,23 +104,27 @@ class RIDIDataset(Dataset):
         self.data_path = [osp.join(root_dir, data) for data in data_list]
         self.index_map = []
         self.ts, self.orientations, self.gt_pos = [], [], []
+        # 从缓存中加载数据
         self.features, self.targets, aux = load_cached_sequences(
             seq_type, root_dir, data_list, cache_path, interval=self.interval, **kwargs)
+        # 把来自不同文件的数据加载到同一个list当中
         for i in range(len(data_list)):
             self.ts.append(aux[i][:, 0])
             self.orientations.append(aux[i][:, 1:5])
             self.gt_pos.append(aux[i][:, -3:])
+            # 将target中的数据 切片[i,j] i代表文件id， j代表切片的索引值 每step_size切一次
             self.index_map += [[i, j] for j in range(0, self.targets[i].shape[0], step_size)]
-
+        print('lode success')
         if kwargs.get('shuffle', True):
             random.shuffle(self.index_map)
 
     def __getitem__(self, item):
         seq_id, frame_id = self.index_map[item][0], self.index_map[item][1]
+        # 默认 random_shift = 0
         if self.random_shift > 0:
             frame_id += random.randrange(-self.random_shift, self.random_shift)
             frame_id = max(self.window_size, min(frame_id, self.targets[seq_id].shape[0] - 1))
-
+        # 就是说每200个feature 生成一个target
         feat = self.features[seq_id][frame_id:frame_id + self.window_size]
         targ = self.targets[seq_id][frame_id]
 
