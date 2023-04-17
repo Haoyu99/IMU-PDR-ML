@@ -45,7 +45,7 @@ info = {'type': 'lstm',
         'val_list':None,
         'epochs':1000,
         'save_interval':20,
-        'lr':0.003,
+        'lr':0.03,
         'mode':'train',
         'continue_from':None,
         'model_path' : None,
@@ -96,12 +96,12 @@ class GlobalPosLoss(torch.nn.Module):
             self.history = 1
     # 这里定义的损失函数是用真实位置和估计位置进行计算均方根误差
     def forward(self, pred, targ):
+        # 使用位置计算 而不是使用每秒的位移
+        # 做数据集的时候为什么不用pos直接输入？
         gt_pos = torch.cumsum(targ[:, 1:, ], 1)
         pred_pos = torch.cumsum(pred[:, 1:, ], 1)
-        # if self.mode == 'part':
-        #     gt_pos = gt_pos[:, self.history:, :] - gt_pos[:, :-self.history, :]
-        #     pred_pos = pred_pos[:, self.history:, :] - pred_pos[:, :-self.history, :]
         loss = self.mse_loss(pred_pos, gt_pos)
+        print(loss.shape)
         return torch.mean(loss)
 
 # 写出配置信息
@@ -253,15 +253,16 @@ def train(args, **kwargs):
                 predicted = network(feat)
                 #
                 train_vel.add(predicted.cpu().detach().numpy(), targ.cpu().detach().numpy())
-                # 计算损失值，通常使用交叉熵、均方误差等损失函数，这里的损失函数是通过
+                # 计算损失值，通常使用交叉熵、均方误差等损失函数，这里是均方根
                 loss = criterion(predicted, targ)
+                print(loss)
                 train_loss += loss.cpu().detach().numpy()
                 # 对损失值进行反向传播，计算参数的梯度
                 loss.backward()
                 # 使用优化器（optimizer）更新模型的参数
                 optimizer.step()
                 step += 1
-
+            # 计算每个batch的loss
             train_errs[epoch] = train_loss / train_mini_batches
             end_t = time.time()
             if not quiet_mode:
@@ -301,6 +302,7 @@ def train(args, **kwargs):
 
 if __name__ == '__main__':
     train(args)
+
 
 
 

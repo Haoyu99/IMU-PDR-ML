@@ -4,7 +4,7 @@ import numpy as np
 
 
 class MSEAverageMeter:
-    def __init__(self, ndim, retain_axis, n_values=3):
+    def __init__(self, ndim, retain_axis, n_values=2):
         """
         Calculate average without overflows
         计算均值 避免数据溢出
@@ -14,15 +14,19 @@ class MSEAverageMeter:
         """
         self.count = 0
         self.average = np.zeros(n_values, dtype=np.float64)
+        # 计算均值时忽略此维度
         self.retain_axis = retain_axis
         self.targets = []
         self.predictions = []
+        # self.axis = (0,1)
         self.axis = tuple(np.setdiff1d(np.arange(0, ndim), retain_axis))
 
     def add(self, pred, targ):
         self.targets.append(targ)
         self.predictions.append(pred)
+        # 在两个维度计算均值
         val = np.average((targ - pred) ** 2, axis=self.axis)
+        # 0维度的个数 * 1维度的个数
         c = np.prod([targ.shape[i] for i in self.axis])
         ct = c + self.count
         self.average = self.average * (self.count / ct) + val * (c / ct)
