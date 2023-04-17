@@ -1,4 +1,4 @@
-from data_ridi import RIDIRawDataSequence,RIDIDataset
+from data_ridi import RIDIRawDataSequence,RIDIDataset,SequenceToSequenceDataset
 import matplotlib.pyplot as plt
 from data_utils import load_cached_sequences
 from pathlib import Path
@@ -31,5 +31,7 @@ with open(list_path) as f:
 seq_type = RIDIRawDataSequence
 cache = root_dir+'\\cache'
 # load_cached_sequences(seq_type,root_dir,data_list,cache)
-data = RIDIDataset(RIDIRawDataSequence,root_dir,data_list,cache)
-print(len(data))
+# RIDIDataset 输入是[200 * 6 * 1] 输出[1 * 2 * 1]
+# SeqToSeq 输入是[400 * 6 ] 输出[400 * 6 ]
+data = SequenceToSequenceDataset(RIDIRawDataSequence,root_dir,data_list,cache)
+print(data.__getitem__(0))

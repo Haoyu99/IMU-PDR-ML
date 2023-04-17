@@ -79,6 +79,7 @@ def load_cached_sequences(seq_type, root_dir, data_list, cache_path, **kwargs):
                     f['feature'] = feat
                     f['target'] = targ
                     f['aux'] = aux
+        print(data_list[i])
         features_all.append(feat)
         targets_all.append(targ)
         aux_all.append(aux)
