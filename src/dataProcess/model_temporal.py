@@ -9,7 +9,7 @@ from tcn import TemporalConvNet
 
 class LSTMSeqNetwork(torch.nn.Module):
     def __init__(self, input_size, out_size, batch_size, device,
-                 lstm_size=100, lstm_layers=3, dropout=0):
+                 lstm_size=100, lstm_layers=3, dropout=0.8):
         """
         Simple LSTM network
         Input: torch array [batch x frames x input_size]
@@ -52,7 +52,7 @@ class LSTMSeqNetwork(torch.nn.Module):
 
 class BilinearLSTMSeqNetwork(torch.nn.Module):
     def __init__(self, input_size, out_size, batch_size, device,
-                 lstm_size=100, lstm_layers=3, dropout=0):
+                 lstm_size=100, lstm_layers=3, dropout=0.8):
         """
         LSTM network with Bilinear layer
         Input: torch array [batch x frames x input_size]
@@ -77,8 +77,10 @@ class BilinearLSTMSeqNetwork(torch.nn.Module):
         self.bilinear = torch.nn.Bilinear(self.input_size, self.input_size, self.input_size * 4)
         self.lstm = torch.nn.LSTM(self.input_size * 5, self.lstm_size, self.num_layers, batch_first=True, dropout=dropout)
         self.linear1 = torch.nn.Linear(self.lstm_size + self.input_size * 5, self.output_size * 5)
+        self.tanh = torch.nn.Tanh() # add tanh layer
         self.linear2 = torch.nn.Linear(self.output_size * 5, self.output_size)
         self.hidden = self.init_weights()
+
 
     def forward(self, input):
         input_mix = self.bilinear(input, input)
@@ -86,6 +88,7 @@ class BilinearLSTMSeqNetwork(torch.nn.Module):
         output, self.hidden = self.lstm(input_mix, self.init_weights())
         output = torch.cat([input_mix, output], dim=2)
         output = self.linear1(output)
+        output = self.tanh(output) # add tanh layer
         output = self.linear2(output)
         return output
 

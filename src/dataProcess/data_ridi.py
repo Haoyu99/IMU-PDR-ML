@@ -10,7 +10,7 @@ class RIDIRawDataSequence(DataSequence):
     """
     DataSet: RIDI数据集
     Features : 三轴的加速度，三轴的陀螺仪
-    target: 真实的位置position(x,y)
+    target: 时间窗位移
     """
     feature_dim = 6
     target_dim = 2
@@ -68,7 +68,7 @@ class RIDIRawDataSequence(DataSequence):
         self.ts = ts
         self.features = np.concatenate([gyro, acce], axis=1)
         # 计算每个时间窗的的位移
-        self.targets = (pos[self.w:, :] - pos[:-self.w, :]) / (ts[self.w:] - ts[:-self.w])
+        self.targets = pos[self.w:, :] - pos[:-self.w, :]
         self.gt_pos = pos
         self.orientations = quat
         print(self.ts.shape, self.features.shape, self.targets.shape, self.gt_pos.shape, self.orientations.shape,
@@ -83,6 +83,148 @@ class RIDIRawDataSequence(DataSequence):
     def get_aux(self):
         return np.concatenate([self.ts, self.orientations, self.gt_pos], axis=1)
 
+
+class RIDIRawDataSequence2(DataSequence):
+    """
+    DataSet: RIDI数据集
+    Features : 三轴的加速度，三轴的陀螺仪
+    target: 真实的位置position(x,y)
+    """
+    feature_dim = 6
+    target_dim = 2
+    # aux 数据是 时间 四元数 以及真实位置
+    aux_dim = 7
+
+
+    def __init__(self, data_path, **kwargs):
+        super().__init__(**kwargs)
+        self.ts, self.features, self.targets, self.orientations, self.gt_pos = None, None, None, None, None
+        # w是一个窗口值
+        self.w = kwargs.get('interval', 1)
+        self.info = {}
+
+        if data_path is not None:
+            self.load(data_path)
+
+    def load(self, path):
+        """
+        从指定的path中加载csv文件
+        :param path:
+        :return:
+        """
+        if path[-1] == '/':
+            path = path[:-1]
+
+        self.info['path'] = osp.split(path)[-1]
+        print(path)
+
+        if osp.exists(osp.join(path, 'processed/data.csv')):
+            imu_all = pandas.read_csv(osp.join(path, 'processed/data.csv'))
+        else:
+            print('fail to load, data.csv is not exist')
+
+        ts = imu_all[['time']].values / 1e09  # 时间值变为以秒为单位
+        gyro = imu_all[['gyro_x', 'gyro_y', 'gyro_z']].values
+        acce = imu_all[['acce_x', 'acce_y', 'acce_z']].values
+        pos = imu_all[['pos_x', 'pos_y']].values
+        quat = imu_all[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values
+
+
+        self.ts = ts
+        self.features = np.concatenate([gyro, acce], axis=1)
+        # 计算每个时间窗的的位移
+        self.targets = pos
+        self.gt_pos = pos
+        self.orientations = quat
+        print(self.ts.shape, self.features.shape, self.targets.shape, self.gt_pos.shape, self.orientations.shape,
+              self.w)
+
+    def get_feature(self):
+        return self.features
+
+    def get_target(self):
+        return self.targets
+
+    def get_aux(self):
+        return np.concatenate([self.ts, self.orientations, self.gt_pos], axis=1)
+
+
+class RIDIGlobalDataSequence(DataSequence):
+    """
+    DataSet: 通过转换坐标系的RIDI数据集
+    Features : 三轴的加速度，三轴的陀螺仪
+    target: 时间窗位移
+    """
+    feature_dim = 6
+    target_dim = 2
+    # aux 数据是 时间 四元数 以及真实位置
+    aux_dim = 7
+
+
+    def __init__(self, data_path, **kwargs):
+        super().__init__(**kwargs)
+        self.ts, self.features, self.targets, self.orientations, self.gt_pos = None, None, None, None, None
+        # w是一个窗口值
+        self.w = kwargs.get('interval', 1)
+        self.info = {}
+
+        if data_path is not None:
+            self.load(data_path)
+
+    def load(self, path):
+        """
+        从指定的path中加载csv文件
+        :param path:
+        :return:
+        """
+        if path[-1] == '/':
+            path = path[:-1]
+
+        self.info['path'] = osp.split(path)[-1]
+        print(path)
+
+        if osp.exists(osp.join(path, 'processed/data.csv')):
+            imu_all = pandas.read_csv(osp.join(path, 'processed/data.csv'))
+        else:
+            print('fail to load, data.csv is not exist')
+
+        ts = imu_all[['time']].values / 1e09  # 时间值变为以秒为单位
+        gyro = imu_all[['gyro_x', 'gyro_y', 'gyro_z']].values
+        acce = imu_all[['acce_x', 'acce_y', 'acce_z']].values
+        pos = imu_all[['pos_x', 'pos_y', 'pos_z']].values
+        quat = imu_all[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values
+
+        # Use game rotation vector as device orientation.
+        # init_tango_ori = quaternion.quaternion(*imu_all[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values[0])
+        # game_rv = quaternion.from_float_array(imu_all[['rv_w', 'rv_x', 'rv_y', 'rv_z']].values)
+        #
+        # init_rotor = init_tango_ori * game_rv[0].conj()
+        # ori = init_rotor * game_rv
+        #
+        # nz = np.zeros(ts.shape)
+        # gyro_q = quaternion.from_float_array(np.concatenate([nz, gyro], axis=1))
+        # acce_q = quaternion.from_float_array(np.concatenate([nz, acce], axis=1))
+        #
+        # gyro_glob = quaternion.as_float_array(ori * gyro_q * ori.conj())[:, 1:]
+        # acce_glob = quaternion.as_float_array(ori * acce_q * ori.conj())[:, 1:]
+
+        self.ts = ts
+        self.features = np.concatenate([gyro, acce], axis=1)
+        # 计算每个时间窗的的位移
+        self.targets = (pos[self.w:, :2] - pos[:-self.w, :2]) / (ts[self.w:] - ts[:-self.w])
+        self.gt_pos = pos
+        self.orientations = quat
+        print(self.ts.shape, self.features.shape, self.targets.shape, self.gt_pos.shape, self.orientations.shape,
+              self.w)
+
+    def get_feature(self):
+        return self.features
+
+    def get_target(self):
+        return self.targets
+
+    def get_aux(self):
+        return np.concatenate([self.ts, self.orientations, self.gt_pos], axis=1)
 
 class RIDIDataset(Dataset):
     """
@@ -128,13 +270,15 @@ class RIDIDataset(Dataset):
         feat = self.features[seq_id][frame_id:frame_id + self.window_size]
         targ = self.targets[seq_id][frame_id]
 
-        if self.transform is not None:
-            feat, targ = self.transform(feat, targ)
+        # if self.transform is not None:
+        #     feat, targ = self.transform(feat, targ)
 
         return feat.astype(np.float32).T, targ.astype(np.float32), seq_id, frame_id
 
     def __len__(self):
         return len(self.index_map)
+    def get_test_seq(self, i):
+        return self.features[i].astype(np.float32), self.targets[i].astype(np.float32)
 
 
 class SequenceToSequenceDataset(Dataset):
@@ -154,7 +298,7 @@ class SequenceToSequenceDataset(Dataset):
         self.index_map = []
 
         self.features, self.targets, aux = load_cached_sequences(
-            seq_type, root_dir, data_list, cache_path, **kwargs)
+            seq_type, root_dir, data_list, cache_path, interval=self.window_size, **kwargs)
 
         # Optionally smooth the sequence 平滑序列
         # feat_sigma = kwargs.get('feature_sigma,', -1)
@@ -198,6 +342,7 @@ class SequenceToSequenceDataset(Dataset):
         feat = np.copy(self.features[seq_id][frame_id - self.window_size:frame_id])
         # target 的维度 ： 6 * 400
         targ = np.copy(self.targets[seq_id][frame_id - self.window_size:frame_id])
+
 
         # if self.transform is not None:
         #     feat, targ = self.transform(feat, targ)
