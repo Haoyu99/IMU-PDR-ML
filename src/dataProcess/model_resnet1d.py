@@ -1,43 +1,10 @@
-"""  This is the IMUNet with modification in https://github.com/Sachini/ronin/blob/master/source/model_resnet1d.py """
-
-
+"""
+The code is based on the original ResNet implementation from torchvision.models.resnet
+"""
 
 import torch
 import torch.nn as nn
-from collections import OrderedDict
-class DSConv(nn.Module):
-    expansion = 1
-    def __init__(self, f_3x3, f_1x1, kernel_size, stride=1, dilation=1, downsample=None, padding=1):
-        super(DSConv, self).__init__()
-        self.elu = nn.ELU(inplace=True)
-        self.feature = nn.Sequential(OrderedDict([
-            ('dconv', nn.Conv1d(f_3x3,
-                                f_3x3,
-                                kernel_size=3,
-                                groups=f_3x3,
-                                stride=stride,
-                                padding=padding,
-                                bias=False
-                                )),
-            ('bn1', nn.BatchNorm1d(f_3x3)),
-            ('act1', nn.ELU()),
-            ('pconv', nn.Conv1d(f_3x3,
-                                f_1x1,
-                                kernel_size=1,
-                                bias=False)),
-            ('bn2', nn.BatchNorm1d(f_1x1)),
-            ('act2', nn.ELU())
-        ]))
-        self.downsample = downsample
-    def forward(self, x):
-        residual = x
-        out = self.feature(x)
-        if self.downsample is not None:
-            residual = self.downsample(x)
 
-        out += residual
-        out = self.elu(out)
-        return out
 
 def conv3(in_planes, out_planes, kernel_size, stride=1, dilation=1):
     return nn.Conv1d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
@@ -51,7 +18,7 @@ class BasicBlock1D(nn.Module):
         super(BasicBlock1D, self).__init__()
         self.conv1 = conv3(in_planes, out_planes, kernel_size, stride, dilation)
         self.bn1 = nn.BatchNorm1d(out_planes)
-        self.elu = nn.ELU(inplace=True)
+        self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3(out_planes, out_planes, kernel_size)
         self.bn2 = nn.BatchNorm1d(out_planes)
         self.stride = stride
@@ -62,7 +29,7 @@ class BasicBlock1D(nn.Module):
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = self.elu(out)
+        out = self.relu(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
@@ -71,11 +38,47 @@ class BasicBlock1D(nn.Module):
             residual = self.downsample(x)
 
         out += residual
-        out = self.elu(out)
+        out = self.relu(out)
 
         return out
 
 
+class Bottleneck1D(nn.Module):
+    expansion = 4
+
+    def __init__(self, in_planes, out_planes, kernel_size, stride=1, dilation=1, downsample=None):
+        super(Bottleneck1D, self).__init__()
+        self.conv1 = nn.Conv1d(in_planes, out_planes, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm1d(out_planes)
+        self.conv2 = conv3(out_planes, out_planes, kernel_size, stride, dilation)
+        self.bn2 = nn.BatchNorm1d(out_planes)
+        self.conv3 = nn.Conv1d(out_planes, out_planes * self.expansion, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm1d(out_planes * self.expansion)
+        self.relu = nn.ReLU(inplace=True)
+        self.stride = stride
+        self.downsample = downsample
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
 
 
 class FCOutputModule(nn.Module):
@@ -94,7 +97,7 @@ class FCOutputModule(nn.Module):
           trans_planes: (optional) number of planes of the transition convolutional layer.
         """
         super(FCOutputModule, self).__init__()
-        fc_dim = kwargs.get('fc_dim', 512)
+        fc_dim = kwargs.get('fc_dim', 1024)
         dropout = kwargs.get('dropout', 0.5)
         in_dim = kwargs.get('in_dim', 7)
         trans_planes = kwargs.get('trans_planes', None)
@@ -108,10 +111,10 @@ class FCOutputModule(nn.Module):
 
         self.fc = nn.Sequential(
             nn.Linear(in_planes * in_dim, fc_dim),
-            nn.ELU(True),
+            nn.ReLU(True),
             nn.Dropout(dropout),
             nn.Linear(fc_dim, fc_dim),
-            nn.ELU(True),
+            nn.ReLU(True),
             nn.Dropout(dropout),
             nn.Linear(fc_dim, num_outputs))
 
@@ -144,10 +147,10 @@ class GlobAvgOutputModule(nn.Module):
         return self.fc(x)
 
 
-class IMUNet(nn.Module):
+class ResNet1D(nn.Module):
     def __init__(self, num_inputs, num_outputs, block_type, group_sizes, base_plane=64, output_block=None,
                  zero_init_residual=False, **kwargs):
-        super(IMUNet, self).__init__()
+        super(ResNet1D, self).__init__()
         self.base_plane = base_plane
         self.inplanes = self.base_plane
 
@@ -155,7 +158,7 @@ class IMUNet(nn.Module):
         self.input_block = nn.Sequential(
             nn.Conv1d(num_inputs, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False),
             nn.BatchNorm1d(self.inplanes),
-            nn.ELU(inplace=True),
+            nn.ReLU(inplace=True),
             nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
         )
 
@@ -195,7 +198,7 @@ class IMUNet(nn.Module):
     def _initialize(self, zero_init_residual):
         for m in self.modules():
             if isinstance(m, nn.Conv1d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, nn.BatchNorm1d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -208,8 +211,9 @@ class IMUNet(nn.Module):
         # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
         if zero_init_residual:
             for m in self.modules():
-
-                if isinstance(m, BasicBlock1D):
+                if isinstance(m, Bottleneck1D):
+                    nn.init.constant_(m.bn3.weight, 0)
+                elif isinstance(m, BasicBlock1D):
                     nn.init.constant_(m.bn2.weight, 0)
 
     def forward(self, x):
@@ -220,18 +224,3 @@ class IMUNet(nn.Module):
 
     def get_num_params(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
-if __name__ == '__main__':
-    from torch.autograd import Variable
-    _input_channel, _output_channel = 6, 2
-    _fc_config = {'fc_dim': 512, 'in_dim': 7, 'dropout': 0.5, 'trans_planes': 128}
-
-    net = IMUNet(_input_channel, _output_channel, BasicBlock1D, [2, 2, 2, 2],
-                     base_plane=64, output_block=FCOutputModule, kernel_size=3, **_fc_config)
-    print (net)
-    pytorch_total_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
-    print('Network constructed. trainable parameters: {}'.format(pytorch_total_params))
-    x_image = Variable(torch.randn(1,6, 200))
-    y = net(x_image)
-    print(y)
-    
-

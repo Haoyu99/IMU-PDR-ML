@@ -15,6 +15,7 @@ from tensorboardX import SummaryWriter
 
 from model_temporal import LSTMSeqNetwork, BilinearLSTMSeqNetwork, TCNSeqNetwork
 from IMUNet import IMUNet, BasicBlock1D, FCOutputModule
+from model_resnet1d import ResNet1D
 from utils import load_config, MSEAverageMeter
 from data_ridi import SequenceToSequenceDataset, RIDIDataset, RIDIRawDataSequence, RIDIRawDataSequence2
 
@@ -47,7 +48,7 @@ info = {'type': 'lstm_bi',
         'target_sigma': 0.0,
         'window_size': 200,
         'step_size': 10,
-        'batch_size': 1024,
+        'batch_size': 64,
         'num_workers': 1,
         'out_dir': '/home/jiamingjie/zhanghaoyu/datacache/handle_out/',
         'device': 'cuda:1',
@@ -160,9 +161,12 @@ def get_model(args, **kwargs):
         # print("Bilinear LSTM Network")
         # network = BilinearLSTMSeqNetwork(_input_channel, _output_channel, args.batch_size, device,
         #                                  lstm_layers=args.layers, lstm_size=args.layer_size, **config).to(device)
-        _fc_config = {'fc_dim': 512, 'in_dim': 7, 'dropout': 0.7, 'trans_planes': 128}
-        network = IMUNet(_input_channel, 2, BasicBlock1D, [2, 2, 2, 2],
+        _fc_config = {'fc_dim': 512, 'in_dim': 7, 'dropout': 0.5, 'trans_planes': 128}
+        # network = IMUNet(_input_channel, 2, BasicBlock1D, [2, 2, 2, 2],
+        #                    base_plane=64, output_block=FCOutputModule, kernel_size=3, **_fc_config)
+        network = ResNet1D(_input_channel, _output_channel, BasicBlock1D, [2, 2, 2, 2],
                            base_plane=64, output_block=FCOutputModule, kernel_size=3, **_fc_config)
+
     else:
         print("Simple LSTM Network")
         network = LSTMSeqNetwork(_input_channel, _output_channel, args.batch_size, device,

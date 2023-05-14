@@ -29,7 +29,7 @@ def from_path_to_df(in_path):
 
 
 # 读取文件
-BASE_DIR = Path('D:\DataSet\RIDI\\archive\data_publish_v2')
+BASE_DIR = Path('/home/jiamingjie/zhanghaoyu/test_data')
 # 把所有txt文件的名字全部存入 all_files_df
 # DataFrame是一个表型的数据结构
 all_files_df = pd.DataFrame({'path': list(BASE_DIR.glob('*/*.txt'))})
@@ -62,24 +62,24 @@ for k, v in dict_df.items():
 # Pose的(1,2,3)列对应着x，y,z
 column = dict_df['pose'].pop('timestamp_s')  # 将目标列从DataFrame中弹出
 dict_df['pose'].insert(0, 'timestamp_s', column)  # 将目标列插入到第一列
-# print(dict_df['pose'])
+print(dict_df['pose'])
 # 以时间为横坐标 显示三轴的数据
 # dict_df['pose'].iloc[:, :4].plot('timestamp_s')
 # dict_df['pose'].iloc[:, 1:3].plot('y')
 
-plt.show()
+# plt.show()
 
 # # 显示真实的轨迹
 fig, ax1 = plt.subplots(1, 1, figsize=(10, 10))
 # ax1.plot(la_df['pos_x'], la_df['pos_y'], '.-', label='Integrated Position')
-ax1.plot(dict_df['pose']['x'], dict_df['pose']['y'], '+-', label='Actual Pose')
+ax1.plot(dict_df['pose']['x'], dict_df['pose']['z'], '+-', label='Actual Pose')
 ax1.legend()
 ax1.axis('equal')
 plt.show()
 # 展示3d数据
 # fig = plt.figure(figsize=(10, 10), dpi=300)
 # ax1 = fig.add_subplot(111, projection='3d')
-# ax1.plot(dict_df['pose']['x'], dict_df['pose']['y'], dict_df['pose']['z'], label='Actual Pose')
+# ax1.plot(dict_df['pose']['x'],  dict_df['pose']['z'],dict_df['pose']['y'], label='Actual Pose')
 # ax1.legend()
 # ax1.axis('auto')
 # plt.show()
