@@ -135,3 +135,44 @@ class TCNSeqNetwork(torch.nn.Module):
 
     def get_receptive_field(self):
         return 1 + 2 * (self.kernel_size - 1) * (2 ** self.num_layers - 1)
+
+
+
+class BiLSTM(torch.nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, output_size, dropout=0.2):
+        super(BiLSTM, self).__init__()
+
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.output_size = output_size
+
+        self.lstm = torch.nn.LSTM(input_size, hidden_size, num_layers=num_layers, batch_first=True, bidirectional=True)
+        self.dropout = torch.nn.Dropout(p=dropout)
+        self.tanh = torch.nn.Tanh()
+        self.fc = torch.nn.Linear(hidden_size * 2, output_size) # 2 for bidirectional
+
+        # Random initialization of model parameters
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        for param in self.parameters():
+            if len(param.shape) >= 2:
+                torch.nn.init.xavier_uniform_(param)
+
+    def forward(self, x):
+        # Set initial states
+        h0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_size).to(x.device) # 2 for bidirectional
+        c0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_size).to(x.device)
+
+        # Forward propagate LSTM
+        out, _ = self.lstm(x, (h0, c0))
+
+        # Apply dropout and tanh
+        out = self.dropout(out)
+        out = self.tanh(out)
+
+        # Decode the hidden state of the last time step
+        out = self.fc(out[:, -1, :])
+        return out
+

@@ -75,7 +75,7 @@ fig, ax1 = plt.subplots(1, 1, figsize=(10, 10))
 ax1.plot(dict_df['pose']['x'], dict_df['pose']['z'], '+-', label='Actual Pose')
 ax1.legend()
 ax1.axis('equal')
-plt.show()
+plt.show()  
 # 展示3d数据
 # fig = plt.figure(figsize=(10, 10), dpi=300)
 # ax1 = fig.add_subplot(111, projection='3d')

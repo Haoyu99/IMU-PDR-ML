@@ -24,10 +24,8 @@ import pandas as pd
 
 
 # 测试load_cached_sequences方法
-# root_dir = 'D:\DataSet\RIDI\\archive\data_publish_v2'
-# list_path = 'D:\DataSet\RIDI\\archive\data_publish_v2\\test_list2.txt'
-root_dir = '/home/jiamingjie/zhanghaoyu/data'
-list_path = '/home/jiamingjie/zhanghaoyu/data/test_list2.txt'
+root_dir = 'D:\DataSet\RIDI\\archive\data_publish_v2'
+list_path = 'D:\DataSet\RIDI\\archive\data_publish_v2\\train_list.txt'
 with open(list_path) as f:
     data_list = [s.strip().split(',' or ' ')[0] for s in f.readlines() if len(s) > 0 and s[0] != '#']
 seq_type = RIDIRawDataSequence
@@ -35,6 +33,5 @@ cache = root_dir+'\\cache'
 # load_cached_sequences(seq_type,root_dir,data_list,cache)
 # RIDIDataset 输入是[200 * 6 * 1] 输出[1 * 2 * 1]
 # SeqToSeq 输入是[400 * 6 ] 输出[400 * 6 ]
-data = SequenceToSequenceDataset(RIDIRawDataSequence,root_dir,data_list,cache,shuffle=False)
-data.__getitem__(0)
-print(data.index_map)
+data = SequenceToSequenceDataset(RIDIRawDataSequence,root_dir,data_list,cache)
+print(data.__getitem__(0))

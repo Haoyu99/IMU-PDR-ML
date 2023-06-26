@@ -342,6 +342,7 @@ class SequenceToSequenceDataset(Dataset):
         feat = np.copy(self.features[seq_id][frame_id - self.window_size:frame_id])
         # target 的维度 ： 6 * 400
         targ = np.copy(self.targets[seq_id][frame_id - self.window_size:frame_id])
+        # targ = self.targets[seq_id][frame_id]
 
 
         # if self.transform is not None:

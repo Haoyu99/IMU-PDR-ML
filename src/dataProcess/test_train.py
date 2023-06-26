@@ -20,7 +20,7 @@ from utils import load_config, MSEAverageMeter
 from data_ridi import SequenceToSequenceDataset, RIDIDataset, RIDIRawDataSequence, RIDIRawDataSequence2
 
 _input_channel, _output_channel = 6, 2
-device = 'cuda:1'
+device = 'cuda:0'
 
 
 # 定义训练中需要用到的参数
@@ -36,22 +36,29 @@ class GetArgs(dict):
 
 
 info = {'type': 'lstm_bi',
-        # 'data_dir': 'D:\DataSet\RIDI\\archive\data_publish_v2',
-        'data_dir': '/home/jiamingjie/zhanghaoyu/data',
-        'train_list': '/home/jiamingjie/zhanghaoyu/data/train_handle.txt',
-        'val_list': '/home/jiamingjie/zhanghaoyu/data/val_handle.txt',
-        'test_list': '/home/jiamingjie/zhanghaoyu/data/test_list2.txt',
-        'cache_path': '/home/jiamingjie/zhanghaoyu/data//cache',
+        'data_dir': 'D:\DataSet\RIDI\\archive\data_publish_v2',
+        # 'data_dir': '/home/jiamingjie/zhanghaoyu/data',
+        # 'train_list': '/home/jiamingjie/zhanghaoyu/data/train_handle.txt',
+        'train_list': 'D:\DataSet\RIDI\\archive\list\\train.txt',
+        # 'val_list': '/home/jiamingjie/zhanghaoyu/data/val_handle.txt',
+        'val_list': 'D:\DataSet\RIDI\\archive\list\\val.txt',
+        # 'test_list': '/home/jiamingjie/zhanghaoyu/data/test_list2.txt',
+        'test_list': 'D:\DataSet\RIDI\\archive\list\\test.txt',
 
-        'model_path': '/home/jiamingjie/zhanghaoyu/datacache/handle_out/checkpoints/checkpoint_best.pt',
+        # 'cache_path': '/home/jiamingjie/zhanghaoyu/data//cache',
+        'cache_path': 'D:\DataSet\RIDI\\archive\\cache',
+
+        # 'model_path': '/home/jiamingjie/zhanghaoyu/datacache/handle_out/checkpoints/checkpoint_best.pt',
+        'model_path': 'D:\DataSet\RIDI\\archive/out/checkpoints/checkpoint_best.pt',
         'feature_sigma': 0.001,
         'target_sigma': 0.0,
         'window_size': 200,
         'step_size': 10,
-        'batch_size': 64,
+        'batch_size': 128,
         'num_workers': 1,
-        'out_dir': '/home/jiamingjie/zhanghaoyu/datacache/handle_out/',
-        'device': 'cuda:1',
+        # 'out_dir': '/home/jiamingjie/zhanghaoyu/datacache/handle_out/',
+        'out_dir': 'D:\DataSet\RIDI\\archive/out',
+        'device': 'cuda:0',
         'dataset': 'ridi',
         'layers': 3,
         'layer_size': 200,
@@ -164,7 +171,7 @@ def get_model(args, **kwargs):
         _fc_config = {'fc_dim': 512, 'in_dim': 7, 'dropout': 0.5, 'trans_planes': 128}
         # network = IMUNet(_input_channel, 2, BasicBlock1D, [2, 2, 2, 2],
         #                    base_plane=64, output_block=FCOutputModule, kernel_size=3, **_fc_config)
-        network = ResNet1D(_input_channel, _output_channel, BasicBlock1D, [2, 2, 2, 2],
+        network = IMUNet(_input_channel, _output_channel, BasicBlock1D, [2, 2, 2, 2],
                            base_plane=64, output_block=FCOutputModule, kernel_size=3, **_fc_config)
 
     else:
@@ -557,5 +564,5 @@ def test(args, **kwargs):
 
 
 if __name__ == '__main__':
-    train(args,use_scheduler = True)
-    # test(args)
+    # train(args,use_scheduler = True)
+    test(args)
